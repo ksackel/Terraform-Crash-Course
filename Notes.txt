@@ -1,0 +1,112 @@
+terraform - IaC - build cloud infra through code
+
+Contents:
+-setup aws
+-install terraform
+-text editor VS code
+-core concepts
+-create aws resources
+-edit aws resources
+-terraform state
+-reference resources within code
+-project to deploy web server on AWS
+
+Setup terraform:
+download terraform
+https://www.terraform.io/downloads.html
+copy binary to folder
+add folder to path variable
+terraform -v // validate install 
+
+Setup Text editor:
+install text editor - visual studio code //code.visualstudio.com
+install terraform extension in vs code // makes editing code easier e.g autocompletion, syntax highlighting
+
+Terraform overview:
+tf written in hashicorp configuration language;
+all terraform code stored in file with tf extensions;
+Need to define a provider // plugin that allows us to talk to a specific set of APIs //Documentation @ terraform.io/docs/providers/index.html - shows list of providers that tf support - allows us to create resources within e.g AWS - need to install the required plugin to talk  to the applicable provider;
+terraform init // downloads plugin to talk to providers.
+regardless of provider (aws/gcp) same exact syntax from the tf side so u dont have learn underlying api from aws/gcp; deploy ec2 instance in
+doesnt matter order within tf file e.g you can declare a subnet first and vpc second
+files:terraform.tfsstate //shows state of current resources
+
+# Configure the AWS Provider //define authentication // get access key and secret access key from AWS
+provider "aws" {
+  region = "us-east-1"
+  access_key = 
+  secret_key = 
+  
+}
+
+provision a resource syntax//
+resource "<provider aws>_<resource_type ec2>" "name webapp1" {
+    config options.....
+    key = "value"
+    key = "another value"
+}
+
+Commands:
+terraform plan
+terraform apply
+tf is written in declarative manner; doesnt execute steps sequentially; tell tf what our infra should look like. 
+No matter how many times u run the above tf apply ->we will only have one instance. 
+
+terraform destroy // destroy all infra
+delete specific resources permanently -> change your main TF file and remove code for an instance -> will remove resource from infra;
+
+
+Project:
+create ec2 instance
+deploy on custom vpc
+assign public IP 
+setup web server to run on it
+
+task list for project - See Main.TF
+create custom VPC
+designate internet gateway //will assign public IP to this server
+create custom route table 
+create subnet //has to be assigned to route table //maybe assoc vpc to subnet
+create security group to allow traffic to web server
+create network interface with an IP in the subnet
+assign public ip address to network interface
+create ubuntu server and install and enable apache (all via terraform)
+
+Access created resources
+create a key pair (pen or ppk) to connect to server post deployment.
+ssh to server via public IP -> connection may vary depending on what os u r on.
+WINDOWS: assuming u have the pen file only;
+Download putty
+2 apps will be installed
+1. putty
+2. putty gen // putty gen converts pen file to ppk to be used on windows.
+putty gen -> load and open pen file. select save private key.
+u will now have a pem and ppk version.
+to connect to your instance:
+connect to ec2; via putty inputting ppk
+verify if apache is running:
+systemctl status apache2
+please note if u r on a mac.  u can connect to your webserver iva pen file.
+
+Other commands:
+Terraform state list //list out all resources that we have state. any resources we have created
+terraform stat show <name of resource from terraform state list> //shows properties of resources e.g id and public and private addreses 
+terraform output //displays information about resources post terraform apply; if u add newer outputs u must run terraform apply to display them otherwise u can run terraform refresh which adds to state file but doesnt cfreate new infra. //refreshes state runs output commands without deploying anything.
+to delete single resources:
+terraform destroy -target <resource>.<name>
+to deploy a single resource:
+terraform apply -target <resource>.<name>
+
+Variables:
+to declare variables// has 3 attributes: desccription, default value, type
+if a variable isnt assigned a value at terraform apply it will ask for the value during the apply;
+difficutl to get promprted for what a variable value should be*; we can pass in values to variables through commandline argument;
+even when u terrraform destroy you will still get asked for a value to the variable;
+to assign a value to a variable via command line argument to mitigate teh prompting as above*: 
+terraform -var <variable name>= <variable value>
+best way is to assign values to variables through a file: terraform.tfvars // put values in the file;
+Variable resourcing files:
+if u want to change resourcing files or have multiple resourcing files for variables
+terraform apply -var-file <name of file with suffix tfvars>
+if u set the type of hte variable you limit the range of values. e.g set variable to type string but resourcing file contains a list.//terraform apply will throw an error;
+
